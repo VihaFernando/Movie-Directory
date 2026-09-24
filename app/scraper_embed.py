@@ -81,6 +81,28 @@ def _is_blocked(route_url: str, resource_type: str) -> bool:
     return any(host == blocked or host.endswith("." + blocked) for blocked in settings.BLOCKED_AD_HOSTS)
 
 
+# TEMPORARY diagnostic aid - remove once the HF-container Vidbox failure is
+# understood. Saves a screenshot + HTML snapshot of the page at the moment
+# capture gave up, so we can see what Chromium actually rendered inside the
+# container (vs. the same title working locally) instead of guessing.
+_DEBUG_DIR = "debug_snapshots"
+
+
+async def _dump_debug_snapshot(page, slug: str, tag: str) -> None:
+    import os
+
+    try:
+        os.makedirs(_DEBUG_DIR, exist_ok=True)
+        base = f"{_DEBUG_DIR}/{slug}_{tag}"
+        await page.screenshot(path=f"{base}.png", full_page=True)
+        html = await page.content()
+        with open(f"{base}.html", "w", encoding="utf-8") as f:
+            f.write(html)
+        logger.warning("Saved debug snapshot: %s.png / %s.html (url=%s)", base, base, page.url)
+    except Exception:  # noqa: BLE001 - diagnostics must never break capture itself
+        logger.warning("Could not save debug snapshot for slug=%s", slug, exc_info=True)
+
+
 def build_detail_url(
     slug: str,
     source: str = "current",
@@ -379,9 +401,11 @@ async def capture_embed_url(
                     )
                 except asyncio.TimeoutError:
                     logger.warning("No Vidbox media URL captured for slug=%s", slug)
+                    await _dump_debug_snapshot(page, slug, "no-media-captured")
                     return None
-            except Exception:  # noqa: BLE001 - capture below reports a missing player
-                logger.warning("Vidbox Play button was not available for %s", detail_url)
+            except Exception as exc:  # noqa: BLE001 - capture below reports a missing player
+                logger.warning("Vidbox Play button was not available for %s: %r", detail_url, exc)
+                await _dump_debug_snapshot(page, slug, "play-button-missing")
 
         # Some players publish the playable iframe URL in the DOM, then fail
         # its navigation in headless Chromium because of their own embed

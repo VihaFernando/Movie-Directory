@@ -894,6 +894,31 @@ async def proxy_image(
     )
 
 
+# TEMPORARY diagnostic route - remove alongside scraper_embed._dump_debug_snapshot
+# once the HF-container Vidbox failure is understood. Lists/serves whatever
+# capture_embed_url() saved to debug_snapshots/ on a failed capture.
+@app.get("/api/_debug/snapshots")
+async def list_debug_snapshots():
+    import os
+    d = "debug_snapshots"
+    if not os.path.isdir(d):
+        return {"files": []}
+    return {"files": sorted(os.listdir(d))}
+
+
+@app.get("/api/_debug/snapshots/{filename}")
+async def get_debug_snapshot(filename: str):
+    import os
+    d = "debug_snapshots"
+    path = os.path.join(d, filename)
+    if ".." in filename or not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Not found")
+    media_type = "image/png" if filename.endswith(".png") else "text/html"
+    with open(path, "rb") as f:
+        body = f.read()
+    return Response(content=body, media_type=media_type)
+
+
 @app.get("/api/subtitles/{slug}")
 async def get_subtitles(
     slug: str,
