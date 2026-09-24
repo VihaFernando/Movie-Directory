@@ -1,9 +1,21 @@
-// Thin client for the FastAPI backend (see app/main.py). In dev, Vite
-// proxies /api to http://127.0.0.1:8000 (see vite.config.js); in the built
-// app, FastAPI serves this same origin, so no base URL is needed either way.
+// Thin client for the FastAPI backend (see app/main.py).
+//
+// In dev, Vite proxies /api to http://127.0.0.1:8000 (see vite.config.js)
+// and VITE_API_BASE_URL is normally left unset, so calls stay relative and
+// go through that proxy.
+//
+// In production the frontend (Netlify) and backend (a separate Hugging
+// Face Space) are different origins, so every call below is prefixed with
+// VITE_API_BASE_URL - set that to the deployed backend's URL (no trailing
+// slash, e.g. https://pilotup-hr.hf.space) in Netlify's env config.
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
-async function getJson(url, options) {
-  const res = await fetch(url, options)
+function apiUrl(path) {
+  return `${API_BASE_URL}${path}`
+}
+
+async function getJson(path, options) {
+  const res = await fetch(apiUrl(path), options)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
     throw new Error(body.detail || `HTTP ${res.status}`)
@@ -67,13 +79,18 @@ export function fetchDetail(slug, source = 'vidbox', contentType = 'tv', season 
 
 // --- Playback -----------------------------------------------------------
 
-export function fetchEmbed(slug, source = 'vidbox', contentType = 'movie', season = null, episode = null) {
+export async function fetchEmbed(slug, source = 'vidbox', contentType = 'movie', season = null, episode = null) {
   const params = new URLSearchParams({ source, content_type: contentType })
   // Season/episode identify WHICH stream to resolve for a series - without
   // them the backend resolves whatever the source opens on (its pilot).
   if (contentType === 'tv' && season != null) params.set('season', String(season))
   if (contentType === 'tv' && episode != null) params.set('episode', String(episode))
-  return getJson(`/api/get_embed/${encodeURIComponent(slug)}?${params}`)
+  const embed = await getJson(`/api/get_embed/${encodeURIComponent(slug)}?${params}`)
+  // proxied_url comes back as a bare "/api/proxy_embed?..." path (see
+  // app/main.py's EmbedResponse) - it's what usePlayer.js hands straight to
+  // <video>/hls.js, so it needs the same origin prefix as everything else
+  // here once the frontend and backend are different origins.
+  return { ...embed, proxied_url: embed.proxied_url ? apiUrl(embed.proxied_url) : embed.proxied_url }
 }
 
 export async function fetchSubtitles(slug, contentType = 'movie', season = null, episode = null) {
@@ -94,20 +111,20 @@ export function prefetchEmbed(slug, source = 'vidbox', contentType = 'movie', se
   const params = new URLSearchParams({ source, content_type: contentType })
   if (contentType === 'tv' && season != null) params.set('season', String(season))
   if (contentType === 'tv' && episode != null) params.set('episode', String(episode))
-  fetch(`/api/prefetch_embed/${encodeURIComponent(slug)}?${params}`, { method: 'POST' }).catch(() => {})
+  fetch(apiUrl(`/api/prefetch_embed/${encodeURIComponent(slug)}?${params}`), { method: 'POST' }).catch(() => {})
 }
 
 export function proxiedImageUrl(originalUrl) {
   if (!originalUrl) return ''
-  return `/api/proxy_image?url=${encodeURIComponent(originalUrl)}`
+  return apiUrl(`/api/proxy_image?url=${encodeURIComponent(originalUrl)}`)
 }
 
 // --- Favorites ------------------------------------------------------------
 // Every call needs a Clerk session token (same pattern as the admin calls
 // below) since favorites are per-user.
 
-async function authedJson(token, url, options = {}) {
-  const res = await fetch(url, {
+async function authedJson(token, path, options = {}) {
+  const res = await fetch(apiUrl(path), {
     ...options,
     headers: { ...options.headers, Authorization: `Bearer ${token}` },
   })
@@ -191,8 +208,8 @@ export function removeWatchHistory(token, { slug, source = 'vidbox', content_typ
 // useAuth().getToken()) can produce - so each function takes the token as
 // its first argument rather than fetching it itself.
 
-async function adminJson(token, url, options = {}) {
-  const res = await fetch(url, {
+async function adminJson(token, path, options = {}) {
+  const res = await fetch(apiUrl(path), {
     ...options,
     headers: { ...options.headers, Authorization: `Bearer ${token}` },
   })
