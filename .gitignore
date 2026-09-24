@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.bak
+.env.local
+frontend/.env.local
+uvicorn_out.log
+*.log
+frontend/node_modules/
+frontend/dist/
+image_cache/
+watch_page_check.html

@@ -1,0 +1,289 @@
+.vp-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+}
+
+.vp-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+.vp-video {
+  width: 100%;
+  height: 100%;
+  cursor: default;
+  position: relative;
+  z-index: 2;
+}
+
+.vp-spinner-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.vp-spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  animation: vp-spin 0.8s linear infinite;
+}
+
+@keyframes vp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vp-title-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 4;
+  padding: 16px 20px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+}
+
+.vp-title-bar.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.vp-title-main {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.vp-title-sub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.vp-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  padding: 10px 16px 12px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), transparent);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.15s, transform 0.15s;
+  pointer-events: none;
+}
+
+.vp-controls.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.vp-seek-row {
+  padding: 4px 0 10px;
+}
+
+.vp-seek-bar {
+  position: relative;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  /* A generous hit area without a thick bar: the padding is transparent and
+     clipped away visually, but still catches the pointer, so the bar is
+     easy to grab at 4px tall. */
+  transition: height 0.12s ease;
+}
+
+.vp-seek-bar:hover {
+  height: 6px;
+}
+
+/* A knob at the play head. On a long film the fill advances only a pixel or
+   so a minute, which reads as frozen; a visible handle gives the eye
+   something to locate the position by. */
+.vp-seek-knob {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: hsl(var(--primary));
+  transform: translateY(-50%) scale(0);
+  transition: transform 0.12s ease;
+  pointer-events: none;
+}
+
+.vp-seek-bar:hover .vp-seek-knob {
+  transform: translateY(-50%) scale(1);
+}
+
+.vp-seek-fill {
+  position: absolute;
+  /* Anchor left/top/bottom only - NOT `inset: 0`, which also pins right:0
+     and stretches the fill across the whole bar, fighting the inline width
+     that actually carries the progress value. That made the bar look stuck
+     regardless of how far playback had advanced. */
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  background: hsl(var(--primary));
+}
+
+.vp-btn-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vp-btn-row-left,
+.vp-btn-row-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vp-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  opacity: 0.9;
+}
+
+.vp-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 1;
+}
+
+.vp-volume {
+  width: 70px;
+  accent-color: hsl(var(--primary));
+}
+
+.vp-time {
+  font-size: 12px;
+  color: #eee;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.vp-menu-wrap {
+  position: relative;
+}
+
+.vp-menu {
+  position: absolute;
+  bottom: 42px;
+  right: 0;
+  background: rgba(20, 20, 24, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 6px;
+  min-width: 110px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vp-menu button {
+  background: none;
+  border: none;
+  color: #ddd;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+}
+
+.vp-menu button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.vp-menu button.is-active {
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+/* Quality rows carry a label + an estimated size, spaced apart rather than
+   stacked - the size is a secondary detail, not equal billing with the
+   resolution. */
+.vp-menu button:has(.vp-quality-size) {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.vp-quality-size {
+  font-size: 11px;
+  color: #999;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* --- Audio boost --- */
+.vp-btn-active {
+  color: hsl(var(--primary));
+}
+
+.vp-menu-audio {
+  width: 210px;
+  padding: 10px 12px;
+}
+
+.vp-menu-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #eee;
+  margin-bottom: 8px;
+}
+
+.vp-boost-value {
+  color: hsl(var(--primary));
+  font-variant-numeric: tabular-nums;
+}
+
+.vp-boost-range {
+  width: 100%;
+  accent-color: hsl(var(--primary));
+}
+
+.vp-menu-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #999;
+}
