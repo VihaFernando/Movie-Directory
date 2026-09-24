@@ -11,3 +11,11 @@ frontend/node_modules/
 frontend/dist/
 image_cache/
 watch_page_check.html
+debug_snapshots/
+
+# Desktop app build output (see build_exe.spec) - PyInstaller's intermediate
+# cache and the ~450MB packaged exe folder (which also bundles real .env
+# credentials - see desktop_launcher.py). Neither belongs in git; build it
+# locally with `pyinstaller build_exe.spec` when you need a fresh copy.
+build/
+dist/

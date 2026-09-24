@@ -982,7 +982,17 @@ async def get_subtitles(
 # frontend/.env.example's VITE_API_BASE_URL), frontend/dist never exists
 # here at all. StaticFiles raises on mount if its directory is missing, so
 # this would otherwise crash the app on startup in that deployment.
+#
+# Resolved relative to this file (not the process's cwd): plain `python
+# run.py` from the project root made a bare "frontend/dist" work by
+# accident, but a PyInstaller-frozen exe can be launched from any working
+# directory (wherever the user double-clicked it), and sys._MEIPASS is
+# where PyInstaller actually extracts bundled data at runtime - a relative
+# path would silently fail to find the frontend in that case.
 import os
+import sys
 
-if os.path.isdir("frontend/dist"):
-    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+_frontend_dist = os.path.join(getattr(sys, "_MEIPASS", os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
+
+if os.path.isdir(_frontend_dist):
+    app.mount("/", StaticFiles(directory=_frontend_dist, html=True), name="frontend")
