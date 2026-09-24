@@ -33,6 +33,7 @@ from starlette.background import BackgroundTask
 from app import catalog_index, favorites, tmdb, users as user_mirror, watch_history
 from app.admin_routes import router as admin_router
 from app.browser_pool import close_browser, warm_up
+from app.camoufox_pool import close_camoufox
 from app.clerk_auth import ClerkUser, close_clerk_api_client, get_current_user
 from app.config import settings
 from app.db import close_mongo, ping as mongo_ping
@@ -156,6 +157,7 @@ async def _shutdown() -> None:
     await catalog_index.stop()
     await tmdb.close()
     await close_browser()
+    await close_camoufox()
     await close_image_client()
     await close_clerk_api_client()
     await close_mongo()
