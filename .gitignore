@@ -19,3 +19,7 @@ debug_snapshots/
 # locally with `pyinstaller build_exe.spec` when you need a fresh copy.
 build/
 dist/
+
+# Plain-text copy of real secrets for pasting into a hosting provider's
+# env-var UI - never commit this.
+HF_SPACE_ENV_VALUES.txt

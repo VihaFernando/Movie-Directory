@@ -18,7 +18,8 @@ RUN python -m camoufox fetch
 
 COPY . .
 
-# HF Spaces injects $PORT and expects the app to bind 0.0.0.0 on it.
+# Both Hugging Face Spaces and Render inject $PORT and expect the app to
+# bind 0.0.0.0 on it - this Dockerfile works unchanged on either.
 ENV PORT=7860
 EXPOSE 7860
 
