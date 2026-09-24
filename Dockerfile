@@ -7,9 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Base image already has Chromium + its OS deps installed for this
 # Playwright version, so no separate `playwright install` step is needed.
-# Camoufox ships its own patched Firefox build, fetched separately - see
-# app/camoufox_pool.py for why embed capture uses it instead of Chromium.
-RUN python -m camoufox fetch
 
 COPY . .
 
