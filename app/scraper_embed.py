@@ -39,7 +39,6 @@ from urllib.parse import urljoin, urlparse
 from playwright.async_api import Frame, Request, Response, Route
 
 from app.browser_pool import new_context
-from app.camoufox_pool import new_capture_context
 from app.config import settings
 from app.proxy import record_captured_url
 
@@ -275,21 +274,10 @@ async def capture_embed_url(
         else:
             await route.continue_()
 
-    # Vidbox specifically is gated behind a Cloudflare "verify you are
-    # human" managed challenge on the hosted deployment's IP (confirmed via
-    # a debug screenshot - see _dump_debug_snapshot below), which the
-    # regular Chromium pool cannot pass. Camoufox is a separate experiment
-    # aimed at that: see app/camoufox_pool.py's module docstring for what it
-    # is and why it's scoped to just this one source rather than replacing
-    # the shared pool everywhere. Every other source keeps using the normal
-    # pooled Chromium context, which already works fine.
-    if source == "vidbox":
-        context = await new_capture_context()
-    else:
-        # Pooled context: picks the next browser round-robin and applies its
-        # persona (user agent, viewport, locale, timezone), so successive
-        # scrapes do not all present as one identical client.
-        context = await new_context()
+    # Pooled context: picks the next browser round-robin and applies its
+    # persona (user agent, viewport, locale, timezone), so successive
+    # scrapes do not all present as one identical client.
+    context = await new_context()
     try:
         page = await context.new_page()
 
