@@ -951,4 +951,13 @@ async def get_subtitles(
 # run `npm run dev` in frontend/ instead and use its dev server (which
 # proxies /api to this backend - see frontend/vite.config.js) rather than
 # this mount.
-app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
+#
+# Conditional: when the backend is deployed standalone (e.g. a Hugging Face
+# Space, with the frontend deployed separately to Netlify - see
+# frontend/.env.example's VITE_API_BASE_URL), frontend/dist never exists
+# here at all. StaticFiles raises on mount if its directory is missing, so
+# this would otherwise crash the app on startup in that deployment.
+import os
+
+if os.path.isdir("frontend/dist"):
+    app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="frontend")
