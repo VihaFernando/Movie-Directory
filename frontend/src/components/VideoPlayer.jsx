@@ -43,7 +43,7 @@ function estimateSize(manifestBitrate, measuredBitrate, durationSec) {
 }
 
 export function VideoPlayer({ player, posterUrl, title, subtitle }) {
-  const { videoRef, buffering, levels, currentLevel, setQuality, subtitleTracks, currentSubtitle, setSubtitle, measuredBitrates } = player
+  const { videoRef, buffering, levels, currentLevel, setQuality, subtitleTracks, currentSubtitle, setSubtitle, subtitleOffset, setSubtitleOffset, measuredBitrates } = player
   const containerRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -423,6 +423,42 @@ export function VideoPlayer({ player, posterUrl, title, subtitle }) {
                         {t.lang}
                       </button>
                     ))}
+                    {currentSubtitle !== -1 && (
+                      // Subtitle files come from a third-party CDN rather
+                      // than being authored against this exact stream (see
+                      // usePlayer.js's subtitleOffset docstring), so a
+                      // fixed timing mismatch is common - this lets it be
+                      // corrected per-title rather than living with it.
+                      <div className="vp-subtitle-sync">
+                        <span className="vp-subtitle-sync-label">
+                          Sync: {subtitleOffset > 0 ? '+' : ''}
+                          {subtitleOffset.toFixed(1)}s
+                        </span>
+                        <div className="vp-subtitle-sync-buttons">
+                          <button
+                            type="button"
+                            onClick={() => setSubtitleOffset((o) => Math.round((o - 0.5) * 10) / 10)}
+                            title="Subtitles appearing too early? Delay them."
+                          >
+                            −0.5s
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSubtitleOffset(0)}
+                            title="Reset sync"
+                          >
+                            Reset
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSubtitleOffset((o) => Math.round((o + 0.5) * 10) / 10)}
+                            title="Subtitles appearing too late? Advance them."
+                          >
+                            +0.5s
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

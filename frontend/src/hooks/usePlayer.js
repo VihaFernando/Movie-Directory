@@ -31,6 +31,22 @@ export function usePlayer() {
   const levelStatsRef = useRef({}) // { [levelIndex]: { bytes, seconds } }
   const [subtitleTracks, setSubtitleTracks] = useState([]) // [{ lang, url }]
   const [currentSubtitle, setCurrentSubtitle] = useState(-1) // -1 = off, else index into subtitleTracks
+  // Seconds to shift every subtitle cue by - positive delays subtitles
+  // (they appear later), negative advances them (appear sooner). Exists
+  // because subtitle files come from a third-party CDN (see
+  // SUBTITLE_URL_TEMPLATE in app/config.py) rather than being authored
+  // against this exact stream, so a fixed offset between the two is common
+  // - not a bug in playback timing, just a mismatched source. Applied by
+  // rewriting each cue's startTime/endTime directly (see
+  // _applySubtitleOffset) since native <track> has no built-in delay API.
+  const [subtitleOffset, setSubtitleOffset] = useState(0)
+  // The un-shifted (lang, start, end) for every cue of every loaded track,
+  // captured once when each track's cues first become available - needed
+  // because re-applying an offset has to shift from the ORIGINAL times,
+  // not from whatever the previous offset already moved them to (cues
+  // aren't reset between changes, so repeatedly shifting from the current
+  // value would compound rather than replace the offset).
+  const originalCueTimesRef = useRef(new Map()) // trackIndex -> [{start, end}]
   const [buffering, setBuffering] = useState(false)
   const videoRef = useRef(null)
   const hlsRef = useRef(null)
@@ -187,6 +203,51 @@ export function usePlayer() {
     if (hlsRef.current) hlsRef.current.currentLevel = levelIndex
     setCurrentLevel(levelIndex)
   }, [])
+
+  // Shifts every cue of one loaded textTrack by `offsetSeconds`, from that
+  // track's ORIGINAL (unshifted) times - captured the first time this runs
+  // for a track, in originalCueTimesRef, so calling this again with a new
+  // offset (the user adjusting the slider) replaces the shift instead of
+  // stacking on top of whatever the previous offset already applied.
+  const _applySubtitleOffset = useCallback((trackIndex, offsetSeconds) => {
+    const video = videoRef.current
+    if (!video) return
+    const textTrack = video.textTracks[trackIndex]
+    const cues = textTrack?.cues
+    if (!cues || cues.length === 0) return
+
+    if (!originalCueTimesRef.current.has(trackIndex)) {
+      originalCueTimesRef.current.set(
+        trackIndex,
+        Array.from(cues).map((c) => ({ start: c.startTime, end: c.endTime })),
+      )
+    }
+    const originals = originalCueTimesRef.current.get(trackIndex)
+    for (let i = 0; i < cues.length && i < originals.length; i++) {
+      cues[i].startTime = originals[i].start + offsetSeconds
+      cues[i].endTime = originals[i].end + offsetSeconds
+    }
+  }, [])
+
+  // Re-applies the current offset whenever it changes or the active
+  // subtitle track changes. Cues load asynchronously after a <track>
+  // element mounts (see VideoPlayer.jsx) - re-running shortly after a
+  // track switch catches cues that were still empty on the first attempt,
+  // without needing a 'load' event listener wired to every mounted track.
+  useEffect(() => {
+    if (currentSubtitle < 0) return
+    _applySubtitleOffset(currentSubtitle, subtitleOffset)
+    const retry = setTimeout(() => _applySubtitleOffset(currentSubtitle, subtitleOffset), 500)
+    return () => clearTimeout(retry)
+  }, [subtitleOffset, currentSubtitle, _applySubtitleOffset])
+
+  // Cue times are per-track state living on the DOM's TextTrack objects,
+  // not in React - a fresh title's tracks start over, so any offset from
+  // a previous title must not silently apply to unrelated cues here.
+  useEffect(() => {
+    setSubtitleOffset(0)
+    originalCueTimesRef.current = new Map()
+  }, [subtitleTracks])
 
   // Toggles native <video> textTracks (rendered via <track> elements in
   // VideoPlayer) rather than hls.js's subtitle API - these are separately
@@ -485,6 +546,8 @@ export function usePlayer() {
     subtitleTracks,
     currentSubtitle,
     setSubtitle,
+    subtitleOffset,
+    setSubtitleOffset,
     buffering,
     measuredBitrates,
   }

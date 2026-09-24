@@ -287,3 +287,29 @@
   line-height: 1.4;
   color: #999;
 }
+
+.vp-subtitle-sync {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vp-subtitle-sync-label {
+  display: block;
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.vp-subtitle-sync-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.vp-subtitle-sync-buttons button {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 6px;
+  white-space: nowrap;
+}
